@@ -1,24 +1,16 @@
-window.Route = {
+window.Routes = {
   routes: []
 };
 
-Route.push = function (route) {
-  Route.routes.push(route);
+Routes.push = function (route) {
+  Routes.routes.push(route);
 };
 
-setTimeout(function () {
-
-});
-
-QUnit.test( "hello test", function( assert ) {
-  assert.ok( 1 == "1", "Passed!" );
-});
-
-QUnit.asyncTest( "asynchronous test: one second later!", function( assert ) {
+QUnit.asyncTest("Route的顺序由外到里依次执行", function( assert ) {
   expect( 1 );
 
   setTimeout(function() {
-    assert.deepEqual(['application'], Route.routes);
+    assert.deepEqual(['application', 'posts'], Routes.routes);
     QUnit.start();
   });
 });
