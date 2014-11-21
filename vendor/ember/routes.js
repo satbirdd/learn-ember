@@ -10,7 +10,7 @@ QUnit.asyncTest("Route的顺序由外到里依次执行", function(assert) {
   expect(1);
 
   setTimeout(function() {
-    assert.deepEqual(Route.routes, ['application', 'index']);
+    assert.deepEqual(Route.routes, ['application', 'posts', 'posts/new']);
     QUnit.start();
   });
 });
