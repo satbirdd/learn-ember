@@ -21,7 +21,7 @@ export default {
 
       model: function (params) {
         index --;
-        // return this.store.find('post', {id: index});
+        return this.store.find('post', {id: index});
       },
 
       afterModel: function (resolvedModel, transition, queryParams) {
