@@ -3,8 +3,11 @@ window.InitializerRecorder = {
   models: [],
   beforeModels: [],
   afterModels: [],
+  setupControllers: [],
   all: []
 };
+
+var nodes = ['application', 'posts', 'posts/new'];
 
 InitializerRecorder.pushRoute = function (route) {
   route = "Route:" + route;
@@ -12,7 +15,7 @@ InitializerRecorder.pushRoute = function (route) {
   InitializerRecorder.all.push(route);
 };
 
-InitializerRecorder.pushModels = function (model) {
+InitializerRecorder.pushModel = function (model) {
   model = "Model:" + model;
   InitializerRecorder.models.push(model);
   InitializerRecorder.all.push(model);
@@ -30,45 +33,99 @@ InitializerRecorder.pushAfterModel = function (marker) {
   InitializerRecorder.all.push(marker);
 };
 
-QUnit.asyncTest("Route的顺序由外到里依次执行", function(assert) {
-  expect(2);
+InitializerRecorder.pushSetupController = function (marker) {
+  marker = "SetupController:" + marker;
+  InitializerRecorder.setupControllers.push(marker);
+  InitializerRecorder.all.push(marker);
+};
+
+
+QUnit.module('初始化过程(首页为/post/new)，脚本执行阶段');
+QUnit.asyncTest("Route的启动顺序,既各个route的init方法的执行顺序为：application  ->  posts  ->  posts/new", function(assert) {
+  expect(1);
 
   // QUnit.stop();
   setTimeout(function() {
-    var routes = ['application', 'posts', 'posts/new'];
-    var prefixedRoutes = prefixRoutes(routes);
+    var prefixedRoutes = prefixRoutes(nodes);
     assert.deepEqual(InitializerRecorder.routes, prefixedRoutes);
+    QUnit.start();
+  });
+});
 
+QUnit.asyncTest("application路由的beforeModel方法为同步调用，其他路由的beforeModel方法为异步调用，既：application的beforeModel方法为脚本执行与回调执行的（已知的）分界线", function(assert) {
+  expect(1);
+
+  // QUnit.stop();
+  setTimeout(function() {
     var bfeModels = ['application'];
-    var prefixedBfeModels = prefixBeforeModels(bfeModels);
-    assert.deepEqual(InitializerRecorder.beforeModels, prefixedBfeModels)
+    var prefixed = prefixBeforeModels(bfeModels);
+    assert.deepEqual(InitializerRecorder.beforeModels, prefixed)
 
     QUnit.start();
   });
 });
 
-QUnit.asyncTest("Route的顺序由外到里依次执行", function(assert) {
-  expect(3);
+
+QUnit.module('回调执行阶段(启动尚未完成)');
+QUnit.asyncTest("各个route的beforeModel方法的执行顺序为：application -> posts -> posts/new", function(assert) {
+  expect(1);
+
+  setTimeout(function() {
+    var prefixed = prefixBeforeModels(nodes);
+    assert.deepEqual(InitializerRecorder.beforeModels, prefixed);
+    QUnit.start();
+  }, 1000);
+});
+
+QUnit.asyncTest("各个route的model方法的执行顺序为：application -> posts -> posts/new", function(assert) {
+  expect(1);
+
+  setTimeout(function() {
+    var prefixed = prefixModels(nodes);
+    assert.deepEqual(InitializerRecorder.models, prefixed);
+    QUnit.start();
+  }, 1);
+});
+
+QUnit.asyncTest("各个route的AfterModel方法的执行顺序为：application -> posts -> posts/new", function(assert) {
+  expect(1);
+
+  setTimeout(function() {
+    var prefixed = prefixAfterModels(nodes);
+    assert.deepEqual(InitializerRecorder.afterModels, prefixed);
+    QUnit.start();
+  }, 1);
+});
+
+QUnit.asyncTest("各个route的setupController方法的执行顺序为：application -> posts -> posts/new", function(assert) {
+  expect(1);
+
+  setTimeout(function() {
+    var prefixed = prefixSetupControllers(nodes);
+    assert.deepEqual(InitializerRecorder.setupControllers, prefixed);
+    QUnit.start();
+  }, 1);
+});
+
+QUnit.asyncTest("整个route内部的启动顺序为：application路由的init -> posts路由的init -> \
+  posts/new路由的init -> application路由beforeModel -> （回调开始）application路由的model -> \
+  application路由的afterModel -> posts路由的beforeModel -> posts路由的model -> \
+  posts路由的afterModel -> application路由的setupController -> posts路由的setupController -> \
+  posts/newne路由的setupController", function(assert) {
+  expect(1);
   // QUnit.stop();
   setTimeout(function() {
-    var bfeModels = ['application', 'posts', 'posts/new'];
-    var prefixedBfeModels = prefixBeforeModels(bfeModels);
-    assert.deepEqual(InitializerRecorder.beforeModels, prefixedBfeModels);
-
-    var afeModels = ['application', 'posts', 'posts/new'];
-    var prefixedafeModels = prefixAfterModels(afeModels);
-    assert.deepEqual(InitializerRecorder.afterModels, prefixedafeModels);
-
     var all = [
       'Route:application', 'Route:posts', 'Route:posts/new',
-      'BeforeModel:application', 'AfterModel:application',
-      'BeforeModel:posts', 'AfterModel:posts',
-      'BeforeModel:posts/new', 'AfterModel:posts/new'
+      'BeforeModel:application', 'Model:application', 'AfterModel:application',
+      'BeforeModel:posts', 'Model:posts', 'AfterModel:posts',
+      'BeforeModel:posts/new', 'Model:posts/new', 'AfterModel:posts/new',
+      'SetupController:application', 'SetupController:posts', 'SetupController:posts/new'
     ];
     assert.deepEqual(InitializerRecorder.all, all);
 
     QUnit.start();
-  }, 5000);
+  }, 1);
 });
 
 
@@ -78,21 +135,12 @@ function prefix(pre, items) {
   });
 }
 
-function prefixRoutes (items) {
-  return prefix('Route', items);
-}
-
-function prefixModels (items) {
-  return prefix('Model', items);
-}
-
-function prefixBeforeModels (items) {
-  return prefix('BeforeModel', items);
-}
-
-function prefixAfterModels (items) {
-  return prefix('AfterModel', items);
-}
+['Route', 'BeforeModel', 'Model', 'AfterModel', 'SetupController'].forEach(
+  function (hook, index) {
+    this['prefix' + hook + 's'] = function (items) {
+      return prefix(hook, items);
+    }
+  });
 
 
 // setupController running order?

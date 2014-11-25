@@ -13,22 +13,31 @@ export default {
       },
 
       beforeModel: function (transition) {
-        debugger;
         this._super();
         var routeName = get_route_name(this.toString());
         InitializerRecorder.pushBeforeModel(routeName);
       },
 
       model: function (params) {
+        var routeName = get_route_name(this.toString());
+        InitializerRecorder.pushModel(routeName);
+
         index --;
         return this.store.find('post', {id: index});
       },
 
       afterModel: function (resolvedModel, transition, queryParams) {
-        debugger
         this._super(resolvedModel, transition, queryParams);
+
         var routeName = get_route_name(this.toString());
         InitializerRecorder.pushAfterModel(routeName);
+      },
+
+      setupController: function (controller, model) {
+        this._super(controller, model);
+
+        var routeName = get_route_name(this.toString());
+        InitializerRecorder.pushSetupController(routeName);
       }
     });
   }
