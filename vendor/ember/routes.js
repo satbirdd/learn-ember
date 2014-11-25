@@ -110,8 +110,9 @@ QUnit.asyncTest("各个route的setupController方法的执行顺序为：applica
 QUnit.asyncTest("整个route内部的启动顺序为：application路由的init -> posts路由的init -> \
   posts/new路由的init -> application路由beforeModel -> （回调开始）application路由的model -> \
   application路由的afterModel -> posts路由的beforeModel -> posts路由的model -> \
-  posts路由的afterModel -> application路由的setupController -> posts路由的setupController -> \
-  posts/newne路由的setupController", function(assert) {
+  posts路由的afterModel -> posts/new路由的beforeModel -> posts/new路由的model -> \
+  posts/new路由的afterModel -> application路由的setupController -> posts路由的setupController -> \
+  posts/new路由的setupController", function(assert) {
   expect(1);
   // QUnit.stop();
   setTimeout(function() {
